@@ -4,7 +4,6 @@ import { Plus, MoreVertical, Trash2, Edit, Loader2, CheckCircle, XCircle, Upload
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
-import { Plus } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import AddBooksDialog from './AddBooksDialog';
 import SourceContentViewer from '@/components/chat/SourceContentViewer';
