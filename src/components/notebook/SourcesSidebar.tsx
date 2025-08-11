@@ -237,6 +237,7 @@ const SourcesSidebar = ({
               <p className="text-sm text-gray-600">Loading sources...</p>
             </div>
           ) : books && books.length > 0 ? (
+          ) : sources && sources.length > 0 ? (
             <div className="space-y-4">
               {sources.map((book) => (
                 <ContextMenu key={book.id}>
