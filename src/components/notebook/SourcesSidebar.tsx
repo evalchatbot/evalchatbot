@@ -9,7 +9,6 @@ import AddBooksDialog from './AddBooksDialog';
 import SourceContentViewer from '@/components/chat/SourceContentViewer';
 import { useBooks } from '@/hooks/useBooks';
 import { useSources } from '@/hooks/useSources';
-import { useBooks } from '@/hooks/useBooks';
 import { Citation } from '@/types/message';
 
 interface SourcesSidebarProps {
