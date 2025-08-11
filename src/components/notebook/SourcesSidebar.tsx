@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, MoreVertical, Trash2, Edit, Loader2, CheckCircle, XCircle, Upload } from 'lucide-react';
@@ -236,28 +235,27 @@ const SourcesSidebar = ({
             <div className="text-center py-8">
               <p className="text-sm text-gray-600">Loading sources...</p>
             </div>
-          ) : books && books.length > 0 ? (
           ) : sources && sources.length > 0 ? (
             <div className="space-y-4">
-              {sources.map((book) => (
-                <ContextMenu key={book.id}>
+              {sources.map((source) => (
+                <ContextMenu key={source.id}>
                   <ContextMenuTrigger>
-                    <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(book)}>
+                    <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(source)}>
                       <div className="flex items-start justify-between space-x-3">
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
                           <div className="w-6 h-6 bg-white rounded border border-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             📚
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-gray-900 truncate block">{book.title}</span>
-                            <span className="text-xs text-gray-500 truncate block">by {book.author}</span>
+                            <span className="text-sm text-gray-900 truncate block">{source.title}</span>
+                            <span className="text-xs text-gray-500 truncate block">by {source.author}</span>
                           </div>
                         </div>
                       </div>
                     </Card>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem onClick={() => handleRemoveSource(book)} className="text-red-600 focus:text-red-600">
+                    <ContextMenuItem onClick={() => handleRemoveSource(source)} className="text-red-600 focus:text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Remove from notebook
                     </ContextMenuItem>
