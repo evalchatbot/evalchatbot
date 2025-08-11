@@ -4,11 +4,13 @@ import { Plus, MoreVertical, Trash2, Edit, Loader2, CheckCircle, XCircle, Upload
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
+import { Plus } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import AddBooksDialog from './AddBooksDialog';
 import SourceContentViewer from '@/components/chat/SourceContentViewer';
 import { useBooks } from '@/hooks/useBooks';
 import { useSources } from '@/hooks/useSources';
+import { useBooks } from '@/hooks/useBooks';
 import { Citation } from '@/types/message';
 
 interface SourcesSidebarProps {
@@ -36,6 +38,11 @@ const SourcesSidebar = ({
     isLoading,
     removeFromNotebook
   } = useSources(notebookId);
+
+  const {
+    addBooksToNotebook,
+    isAdding
+  } = useBooks(notebookId);
 
   // Get the source content for the selected citation
   const getSourceContent = (citation: Citation) => {
@@ -251,6 +258,19 @@ const SourcesSidebar = ({
                             <span className="text-xs text-gray-500 truncate block">by {source.author}</span>
                           </div>
                         </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addBooksToNotebook({ bookIds: [source.id] });
+                          }}
+                          disabled={isAdding}
+                          className="flex-shrink-0"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
                       </div>
                     </Card>
                   </ContextMenuTrigger>

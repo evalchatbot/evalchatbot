@@ -261,38 +261,19 @@ export const useChatMessages = (notebookId?: string) => {
     }) => {
       if (!user) throw new Error('User not authenticated');
 
-      // Insert the user message directly into chat_messages
-      const { data: userMessage, error: userError } = await supabase
-        .from('chat_messages')
-        .insert({
-          notebook_id: messageData.notebookId,
-          user_message: messageData.content,
-          assistant_response: '', // Will be filled by AI response
-          citations: null,
-        })
-        .select()
-        .single();
+      // Call the Supabase Edge Function to handle the chat
+      const { data, error } = await supabase.functions.invoke('send-chat-message', {
+        body: {
+          notebookId: messageData.notebookId,
+          message: messageData.content
+        }
+      });
 
-      if (userError) {
-        throw new Error(`Failed to save user message: ${userError.message}`);
+      if (error) {
+        throw new Error(`Failed to send message: ${error.message}`);
       }
 
-      // For now, return a simple response - you'll need to integrate with your AI service
-      const aiResponse = "I understand your question about the books in this notebook. However, the AI integration needs to be configured to provide proper responses based on your book content.";
-      
-      // Update the message with AI response
-      const { error: updateError } = await supabase
-        .from('chat_messages')
-        .update({
-          assistant_response: aiResponse
-        })
-        .eq('id', userMessage.id);
-
-      if (updateError) {
-        throw new Error(`Failed to update with AI response: ${updateError.message}`);
-      }
-
-      return userMessage;
+      return data;
     },
     onSuccess: () => {
       console.log('Message sent successfully');
