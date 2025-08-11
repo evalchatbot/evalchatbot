@@ -14,7 +14,6 @@ import { Citation } from '@/types/message';
 const Notebook = () => {
   const { id: notebookId } = useParams();
   const { notebooks } = useNotebooks();
-  const { sources } = useSources(notebookId);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
   const isDesktop = useIsDesktop();
 
@@ -38,7 +37,7 @@ const Notebook = () => {
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
       <NotebookHeader 
-        title={notebook?.title || 'Untitled Notebook'} 
+        title={notebook?.name || 'Untitled Notebook'} 
         notebookId={notebookId} 
       />
       

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -176,26 +175,25 @@ export const useChatMessages = (notebookId?: string) => {
       if (!notebookId) return [];
       
       const { data, error } = await supabase
-        .from('n8n_chat_histories')
+        .from('chat_messages')
         .select('*')
-        .eq('session_id', notebookId)
-        .order('id', { ascending: true });
+        .eq('notebook_id', notebookId)
+        .order('timestamp', { ascending: true });
 
       if (error) throw error;
       
-      // Also fetch sources to get proper source titles
-      const { data: sourcesData } = await supabase
-        .from('sources')
-        .select('id, title, type')
-        .eq('notebook_id', notebookId);
+      // Also fetch books to get proper book titles
+      const { data: booksData } = await supabase
+        .from('books')
+        .select('id, title, author');
       
-      const sourceMap = new Map(sourcesData?.map(s => [s.id, s]) || []);
+      const bookMap = new Map(booksData?.map(b => [b.id, { title: b.title, type: 'book' }]) || []);
       
       console.log('Raw data from database:', data);
-      console.log('Sources map:', sourceMap);
+      console.log('Books map:', bookMap);
       
       // Transform the data to match our expected format
-      return data.map((item) => transformMessage(item, sourceMap));
+      return data.map((item) => transformChatMessage(item, bookMap));
     },
     enabled: !!notebookId && !!user,
     refetchOnMount: true,
@@ -209,28 +207,27 @@ export const useChatMessages = (notebookId?: string) => {
     console.log('Setting up Realtime subscription for notebook:', notebookId);
 
     const channel = supabase
-      .channel('chat-messages')
+      .channel('chat-messages-updates')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'n8n_chat_histories',
-          filter: `session_id=eq.${notebookId}`
+          table: 'chat_messages',
+          filter: `notebook_id=eq.${notebookId}`
         },
         async (payload) => {
           console.log('Realtime: New message received:', payload);
           
-          // Fetch sources for proper transformation
-          const { data: sourcesData } = await supabase
-            .from('sources')
-            .select('id, title, type')
-            .eq('notebook_id', notebookId);
+          // Fetch books for proper transformation
+          const { data: booksData } = await supabase
+            .from('books')
+            .select('id, title, author');
           
-          const sourceMap = new Map(sourcesData?.map(s => [s.id, s]) || []);
+          const bookMap = new Map(booksData?.map(b => [b.id, { title: b.title, type: 'book' }]) || []);
           
           // Transform the new message
-          const newMessage = transformMessage(payload.new, sourceMap);
+          const newMessage = transformChatMessage(payload.new, bookMap);
           
           // Update the query cache with the new message
           queryClient.setQueryData(['chat-messages', notebookId], (oldMessages: EnhancedChatMessage[] = []) => {
@@ -264,24 +261,41 @@ export const useChatMessages = (notebookId?: string) => {
     }) => {
       if (!user) throw new Error('User not authenticated');
 
-      // Call the n8n webhook
-      const webhookResponse = await supabase.functions.invoke('send-chat-message', {
-        body: {
-          session_id: messageData.notebookId,
-          message: messageData.content,
-          user_id: user.id
-        }
-      });
+      // Insert the user message directly into chat_messages
+      const { data: userMessage, error: userError } = await supabase
+        .from('chat_messages')
+        .insert({
+          notebook_id: messageData.notebookId,
+          user_message: messageData.content,
+          assistant_response: '', // Will be filled by AI response
+          citations: null,
+        })
+        .select()
+        .single();
 
-      if (webhookResponse.error) {
-        throw new Error(`Webhook error: ${webhookResponse.error.message}`);
+      if (userError) {
+        throw new Error(`Failed to save user message: ${userError.message}`);
       }
 
-      return webhookResponse.data;
+      // For now, return a simple response - you'll need to integrate with your AI service
+      const aiResponse = "I understand your question about the books in this notebook. However, the AI integration needs to be configured to provide proper responses based on your book content.";
+      
+      // Update the message with AI response
+      const { error: updateError } = await supabase
+        .from('chat_messages')
+        .update({
+          assistant_response: aiResponse
+        })
+        .eq('id', userMessage.id);
+
+      if (updateError) {
+        throw new Error(`Failed to update with AI response: ${updateError.message}`);
+      }
+
+      return userMessage;
     },
     onSuccess: () => {
-      // The response will appear via Realtime, so we don't need to do anything here
-      console.log('Message sent to webhook successfully');
+      console.log('Message sent successfully');
     },
   });
 
@@ -292,9 +306,9 @@ export const useChatMessages = (notebookId?: string) => {
       console.log('Deleting chat history for notebook:', notebookId);
       
       const { error } = await supabase
-        .from('n8n_chat_histories')
+        .from('chat_messages')
         .delete()
-        .eq('session_id', notebookId);
+        .eq('notebook_id', notebookId);
 
       if (error) {
         console.error('Error deleting chat history:', error);
@@ -337,4 +351,32 @@ export const useChatMessages = (notebookId?: string) => {
     deleteChatHistory: deleteChatHistory.mutate,
     isDeletingChatHistory: deleteChatHistory.isPending,
   };
+};
+
+// Transform function for the new chat_messages table structure
+const transformChatMessage = (item: any, bookMap: Map<string, any>): EnhancedChatMessage => {
+  console.log('Processing chat message item:', item);
+  
+  // Create user message
+  const userMessage: EnhancedChatMessage = {
+    id: `${item.id}-user`,
+    session_id: item.notebook_id,
+    message: {
+      type: 'human',
+      content: item.user_message
+    }
+  };
+  
+  // Create assistant message if response exists
+  const assistantMessage: EnhancedChatMessage = {
+    id: `${item.id}-assistant`,
+    session_id: item.notebook_id,
+    message: {
+      type: 'ai',
+      content: item.assistant_response || 'No response yet'
+    }
+  };
+  
+  // For now, return both messages - you may want to adjust this based on your UI needs
+  return [userMessage, assistantMessage] as any;
 };

@@ -9,9 +9,14 @@ export const useNotebookUpdate = () => {
     mutationFn: async ({ id, updates }: { id: string; updates: { title?: string; description?: string } }) => {
       console.log('Updating notebook:', id, updates);
       
+      // Map frontend fields to database fields
+      const dbUpdates: any = {};
+      if (updates.title) dbUpdates.name = updates.title;
+      if (updates.description) dbUpdates.memory_summary = updates.description;
+      
       const { data, error } = await supabase
         .from('notebooks')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .select()
         .single();

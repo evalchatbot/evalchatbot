@@ -35,20 +35,14 @@ export const useNotebooks = () => {
         throw notebooksError;
       }
 
-      // Then get source counts separately for each notebook
+      // Then get book counts separately for each notebook
       const notebooksWithCounts = await Promise.all(
         (notebooksData || []).map(async (notebook) => {
-          const { count, error: countError } = await supabase
-            .from('sources')
-            .select('*', { count: 'exact', head: true })
-            .eq('notebook_id', notebook.id);
+          // Count books that are selected in this notebook
+          const selectedBooks = notebook.selected_books || [];
+          const count = selectedBooks.length;
 
-          if (countError) {
-            console.error('Error fetching source count for notebook:', notebook.id, countError);
-            return { ...notebook, sources: [{ count: 0 }] };
-          }
-
-          return { ...notebook, sources: [{ count: count || 0 }] };
+          return { ...notebook, sources: [{ count }] };
         })
       );
 
@@ -109,10 +103,12 @@ export const useNotebooks = () => {
       const { data, error } = await supabase
         .from('notebooks')
         .insert({
-          title: notebookData.title,
-          description: notebookData.description,
+          name: notebookData.title,
           user_id: user.id,
-          generation_status: 'pending',
+          selected_books: [],
+          selected_genres: [],
+          memory_summary: notebookData.description || '',
+          key_facts: [],
         })
         .select()
         .single();

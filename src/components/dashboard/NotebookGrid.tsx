@@ -101,15 +101,15 @@ const NotebookGrid = () => {
         {sortedNotebooks.map(notebook => <div key={notebook.id} onClick={e => handleNotebookClick(notebook.id, e)}>
             <NotebookCard notebook={{
           id: notebook.id,
-          title: notebook.title,
+          title: notebook.name,
           date: new Date(notebook.updated_at).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
           }),
           sources: notebook.sources?.[0]?.count || 0,
-          icon: notebook.icon || '📝',
-          color: notebook.color || 'bg-gray-100'
+          icon: '📚',
+          color: 'blue'
         }} />
           </div>)}
       </div>

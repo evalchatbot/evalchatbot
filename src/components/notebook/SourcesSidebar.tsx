@@ -6,11 +6,9 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import AddSourcesDialog from './AddSourcesDialog';
-import RenameSourceDialog from './RenameSourceDialog';
+import AddBooksDialog from './AddBooksDialog';
 import SourceContentViewer from '@/components/chat/SourceContentViewer';
-import { useSources } from '@/hooks/useSources';
-import { useSourceDelete } from '@/hooks/useSourceDelete';
+import { useBooks } from '@/hooks/useBooks';
 import { Citation } from '@/types/message';
 
 interface SourcesSidebarProps {
@@ -28,21 +26,15 @@ const SourcesSidebar = ({
   onCitationClose,
   setSelectedCitation
 }: SourcesSidebarProps) => {
-  const [showAddSourcesDialog, setShowAddSourcesDialog] = useState(false);
+  const [showAddBooksDialog, setShowAddBooksDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [selectedSource, setSelectedSource] = useState<any>(null);
   const [selectedSourceForViewing, setSelectedSourceForViewing] = useState<any>(null);
 
   const {
-    sources,
+    books,
     isLoading
-  } = useSources(notebookId);
-
-  const {
-    deleteSource,
-    isDeleting
-  } = useSourceDelete();
+  } = useBooks(notebookId);
 
   // Get the source content for the selected citation
   const getSourceContent = (citation: Citation) => {
@@ -129,10 +121,6 @@ const SourcesSidebar = ({
     setShowDeleteDialog(true);
   };
 
-  const handleRenameSource = (source: any) => {
-    setSelectedSource(source);
-    setShowRenameDialog(true);
-  };
 
   const handleSourceClick = (source: any) => {
     console.log('SourcesSidebar: Source clicked from list', {
@@ -177,7 +165,9 @@ const SourcesSidebar = ({
 
   const confirmDelete = () => {
     if (selectedSource) {
-      deleteSource(selectedSource.id);
+      // Remove book from notebook instead of deleting
+      const { removeBookFromNotebook } = useBooks(notebookId);
+      removeBookFromNotebook(selectedSource.id);
       setShowDeleteDialog(false);
       setSelectedSource(null);
     }
@@ -233,7 +223,7 @@ const SourcesSidebar = ({
         </div>
         
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowAddSourcesDialog(true)}>
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowAddBooksDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add
           </Button>
@@ -246,35 +236,29 @@ const SourcesSidebar = ({
             <div className="text-center py-8">
               <p className="text-sm text-gray-600">Loading sources...</p>
             </div>
-          ) : sources && sources.length > 0 ? (
+          ) : books && books.length > 0 ? (
             <div className="space-y-4">
-              {sources.map((source) => (
-                <ContextMenu key={source.id}>
+              {books.map((book) => (
+                <ContextMenu key={book.id}>
                   <ContextMenuTrigger>
-                    <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(source)}>
+                    <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(book)}>
                       <div className="flex items-start justify-between space-x-3">
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
                           <div className="w-6 h-6 bg-white rounded border border-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            {renderSourceIcon(source.type)}
+                            📚
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-gray-900 truncate block">{source.title}</span>
+                            <span className="text-sm text-gray-900 truncate block">{book.title}</span>
+                            <span className="text-xs text-gray-500 truncate block">by {book.author}</span>
                           </div>
-                        </div>
-                        <div className="flex-shrink-0 py-[4px]">
-                          {renderProcessingStatus(source.processing_status)}
                         </div>
                       </div>
                     </Card>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem onClick={() => handleRenameSource(source)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Rename source
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={() => handleRemoveSource(source)} className="text-red-600 focus:text-red-600">
+                    <ContextMenuItem onClick={() => handleRemoveSource(book)} className="text-red-600 focus:text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Remove source
+                      Remove book
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
@@ -292,25 +276,19 @@ const SourcesSidebar = ({
         </div>
       </ScrollArea>
 
-      <AddSourcesDialog 
-        open={showAddSourcesDialog} 
-        onOpenChange={setShowAddSourcesDialog} 
+      <AddBooksDialog 
+        open={showAddBooksDialog} 
+        onOpenChange={setShowAddBooksDialog} 
         notebookId={notebookId} 
       />
 
-      <RenameSourceDialog 
-        open={showRenameDialog} 
-        onOpenChange={setShowRenameDialog} 
-        source={selectedSource} 
-        notebookId={notebookId} 
-      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedSource?.title}?</AlertDialogTitle>
             <AlertDialogDescription>
-              You're about to delete this source. This cannot be undone.
+              You're about to remove this book from the notebook.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -318,9 +296,9 @@ const SourcesSidebar = ({
             <AlertDialogAction 
               onClick={confirmDelete} 
               className="bg-red-600 hover:bg-red-700" 
-              disabled={isDeleting}
+              disabled={false}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

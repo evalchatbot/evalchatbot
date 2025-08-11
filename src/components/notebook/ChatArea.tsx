@@ -9,7 +9,7 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useSources } from '@/hooks/useSources';
 import MarkdownRenderer from '@/components/chat/MarkdownRenderer';
 import SaveToNoteButton from './SaveToNoteButton';
-import AddSourcesDialog from './AddSourcesDialog';
+import AddBooksDialog from './AddBooksDialog';
 import { Citation } from '@/types/message';
 
 interface ChatAreaProps {
@@ -18,10 +18,14 @@ interface ChatAreaProps {
   notebook?: {
     id: string;
     title: string;
+    name: string;
     description?: string;
+    memory_summary?: string;
     generation_status?: string;
     icon?: string;
     example_questions?: string[];
+    key_facts?: string[];
+    selected_books?: any[];
   } | null;
   onCitationClick?: (citation: Citation) => void;
 }
@@ -36,7 +40,7 @@ const ChatArea = ({
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const [showAiLoading, setShowAiLoading] = useState(false);
   const [clickedQuestions, setClickedQuestions] = useState<Set<string>>(new Set());
-  const [showAddSourcesDialog, setShowAddSourcesDialog] = useState(false);
+  const [showAddBooksDialog, setShowAddBooksDialog] = useState(false);
   
   const isGenerating = notebook?.generation_status === 'generating';
   
@@ -48,14 +52,10 @@ const ChatArea = ({
     isDeletingChatHistory
   } = useChatMessages(notebookId);
   
-  const {
-    sources
-  } = useSources(notebookId);
-  
-  const sourceCount = sources?.length || 0;
+  const sourceCount = notebook?.selected_books?.length || 0;
 
-  // Check if at least one source has been successfully processed
-  const hasProcessedSource = sources?.some(source => source.processing_status === 'completed') || false;
+  // For now, assume books are always "processed" since they're in the database
+  const hasProcessedSource = sourceCount > 0;
 
   // Chat should be disabled if there are no processed sources
   const isChatDisabled = !hasProcessedSource;
@@ -159,9 +159,9 @@ const ChatArea = ({
   const getPlaceholderText = () => {
     if (isChatDisabled) {
       if (sourceCount === 0) {
-        return "Upload a source to get started...";
+        return "Add books to get started...";
       } else {
-        return "Please wait while your sources are being processed...";
+        return "Please wait while your books are being processed...";
       }
     }
     return "Start typing...";
@@ -185,21 +185,21 @@ const ChatArea = ({
               <div className="max-w-4xl mx-auto">
                 <div className="flex items-center space-x-4 mb-6">
                   <div className="w-10 h-10 flex items-center justify-center bg-transparent">
-                    {isGenerating ? <Loader2 className="text-black font-normal w-10 h-10 animate-spin" /> : <span className="text-[40px] leading-none">{notebook?.icon || '☕'}</span>}
+                    {isGenerating ? <Loader2 className="text-black font-normal w-10 h-10 animate-spin" /> : <span className="text-[40px] leading-none">📚</span>}
                   </div>
                   <div>
                     <h1 className="text-2xl font-medium text-gray-900">
-                      {isGenerating ? 'Generating content...' : notebook?.title || 'Untitled Notebook'}
+                      {isGenerating ? 'Generating content...' : notebook?.name || 'Untitled Notebook'}
                     </h1>
-                    <p className="text-sm text-gray-600">{sourceCount} source{sourceCount !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-gray-600">{sourceCount} book{sourceCount !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 
                 <div className="bg-gray-50 rounded-lg p-6 mb-6">
                   {isGenerating ? <div className="flex items-center space-x-2 text-gray-600">
                       
-                      <p>AI is analyzing your source and generating a title and description...</p>
-                    </div> : <MarkdownRenderer content={notebook?.description || 'No description available for this notebook.'} className="prose prose-gray max-w-none text-gray-700 leading-relaxed" />}
+                      <p>AI is analyzing your books and generating content...</p>
+                    </div> : <MarkdownRenderer content={notebook?.memory_summary || 'No description available for this notebook.'} className="prose prose-gray max-w-none text-gray-700 leading-relaxed" />}
                 </div>
 
                 {/* Chat Messages */}
@@ -249,7 +249,7 @@ const ChatArea = ({
                 <div className="flex-1 relative">
                   <Input placeholder={getPlaceholderText()} value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && !isChatDisabled && !isSending && !pendingUserMessage && handleSendMessage()} className="pr-12" disabled={isChatDisabled || isSending || !!pendingUserMessage} />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
-                    {sourceCount} source{sourceCount !== 1 ? 's' : ''}
+                    {sourceCount} book{sourceCount !== 1 ? 's' : ''}
                   </div>
                 </div>
                 <Button onClick={() => handleSendMessage()} disabled={!message.trim() || isChatDisabled || isSending || !!pendingUserMessage}>
@@ -258,16 +258,16 @@ const ChatArea = ({
               </div>
               
               {/* Example Questions Carousel */}
-              {!isChatDisabled && !pendingUserMessage && !showAiLoading && exampleQuestions.length > 0 && <div className="mt-4">
+              {!isChatDisabled && !pendingUserMessage && !showAiLoading && notebook?.key_facts && notebook.key_facts.length > 0 && <div className="mt-4">
                   <Carousel className="w-full max-w-4xl">
                     <CarouselContent className="-ml-2 md:-ml-4">
-                      {exampleQuestions.map((question, index) => <CarouselItem key={index} className="pl-2 md:pl-4 basis-auto">
-                          <Button variant="outline" size="sm" className="text-left whitespace-nowrap h-auto py-2 px-3 text-sm" onClick={() => handleExampleQuestionClick(question)}>
-                            {question}
+                      {notebook.key_facts.map((fact, index) => <CarouselItem key={index} className="pl-2 md:pl-4 basis-auto">
+                          <Button variant="outline" size="sm" className="text-left whitespace-nowrap h-auto py-2 px-3 text-sm" onClick={() => handleExampleQuestionClick(`Tell me about: ${fact}`)}>
+                            {fact}
                           </Button>
                         </CarouselItem>)}
                     </CarouselContent>
-                    {exampleQuestions.length > 2 && <>
+                    {notebook.key_facts.length > 2 && <>
                         <CarouselPrevious className="left-0" />
                         <CarouselNext className="right-0" />
                       </>}
@@ -282,19 +282,19 @@ const ChatArea = ({
             <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-gray-100">
               <Upload className="h-8 w-8 text-slate-600" />
             </div>
-            <h2 className="text-xl font-medium text-gray-900 mb-4">Add a source to get started</h2>
-            <Button onClick={() => setShowAddSourcesDialog(true)}>
+            <h2 className="text-xl font-medium text-gray-900 mb-4">Add books to get started</h2>
+            <Button onClick={() => setShowAddBooksDialog(true)}>
               <Upload className="h-4 w-4 mr-2" />
-              Upload a source
+              Add books
             </Button>
           </div>
 
           {/* Bottom Input */}
           <div className="w-full max-w-2xl">
             <div className="flex space-x-4">
-              <Input placeholder="Upload a source to get started" disabled className="flex-1" />
+              <Input placeholder="Add books to get started" disabled className="flex-1" />
               <div className="flex items-center text-sm text-gray-500">
-                0 sources
+                0 books
               </div>
               <Button disabled>
                 <Send className="h-4 w-4" />
@@ -308,8 +308,8 @@ const ChatArea = ({
         <p className="text-center text-sm text-gray-500">InsightsLM can be inaccurate; please double-check its responses.</p>
       </div>
       
-      {/* Add Sources Dialog */}
-      <AddSourcesDialog open={showAddSourcesDialog} onOpenChange={setShowAddSourcesDialog} notebookId={notebookId} />
+      {/* Add Books Dialog */}
+      <AddBooksDialog open={showAddBooksDialog} onOpenChange={setShowAddBooksDialog} notebookId={notebookId} />
     </div>;
 };
 

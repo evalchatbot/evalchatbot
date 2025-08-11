@@ -9,131 +9,213 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      documents: {
+      users: {
         Row: {
-          content: string | null
-          embedding: string | null
-          id: number
-          metadata: Json | null
+          id: string
+          email: string
+          full_name: string | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          content?: string | null
-          embedding?: string | null
-          id?: number
-          metadata?: Json | null
+          id?: string
+          email: string
+          full_name?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          content?: string | null
-          embedding?: string | null
-          id?: number
-          metadata?: Json | null
+          id?: string
+          email?: string
+          full_name?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
-      n8n_chat_histories: {
+      books: {
         Row: {
-          id: number
-          message: Json
-          session_id: string
+          id: string
+          title: string
+          author: string
+          genre: Database["public"]["Enums"]["genre_type"]
+          file_path: string
+          total_pages: number
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          id?: number
-          message: Json
-          session_id: string
+          id?: string
+          title: string
+          author: string
+          genre?: Database["public"]["Enums"]["genre_type"]
+          file_path: string
+          total_pages: number
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          id?: number
-          message?: Json
-          session_id?: string
+          id?: string
+          title?: string
+          author?: string
+          genre?: Database["public"]["Enums"]["genre_type"]
+          file_path?: string
+          total_pages?: number
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
+      }
+      document_chunks: {
+        Row: {
+          id: string
+          book_id: string
+          content: string
+          page_start: number
+          page_end: number
+          chunk_index: number
+          embedding: string | null
+          metadata: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          content: string
+          page_start: number
+          page_end: number
+          chunk_index: number
+          embedding?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          content?: string
+          page_start?: number
+          page_end?: number
+          chunk_index?: number
+          embedding?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_chunks_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       notebooks: {
         Row: {
-          audio_overview_generation_status: string | null
-          audio_overview_url: string | null
-          audio_url_expires_at: string | null
-          color: string | null
-          created_at: string
-          description: string | null
-          example_questions: string[] | null
-          generation_status: string | null
-          icon: string | null
           id: string
-          title: string
-          updated_at: string
           user_id: string
+          name: string
+          selected_books: string[] | null
+          selected_genres: Database["public"]["Enums"]["genre_type"][] | null
+          memory_summary: string | null
+          key_facts: string[] | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          audio_overview_generation_status?: string | null
-          audio_overview_url?: string | null
-          audio_url_expires_at?: string | null
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          example_questions?: string[] | null
-          generation_status?: string | null
-          icon?: string | null
           id?: string
-          title: string
-          updated_at?: string
           user_id: string
+          name: string
+          selected_books?: string[] | null
+          selected_genres?: Database["public"]["Enums"]["genre_type"][] | null
+          memory_summary?: string | null
+          key_facts?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          audio_overview_generation_status?: string | null
-          audio_overview_url?: string | null
-          audio_url_expires_at?: string | null
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          example_questions?: string[] | null
-          generation_status?: string | null
-          icon?: string | null
           id?: string
-          title?: string
-          updated_at?: string
           user_id?: string
+          name?: string
+          selected_books?: string[] | null
+          selected_genres?: Database["public"]["Enums"]["genre_type"][] | null
+          memory_summary?: string | null
+          key_facts?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "notebooks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
+        ]
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          notebook_id: string
+          user_message: string
+          assistant_response: string
+          citations: Json | null
+          timestamp: string | null
+        }
+        Insert: {
+          id?: string
+          notebook_id: string
+          user_message: string
+          assistant_response: string
+          citations?: Json | null
+          timestamp?: string | null
+        }
+        Update: {
+          id?: string
+          notebook_id?: string
+          user_message?: string
+          assistant_response?: string
+          citations?: Json | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          }
         ]
       }
       notes: {
         Row: {
-          content: string
-          created_at: string
-          extracted_text: string | null
           id: string
           notebook_id: string
-          source_type: string | null
           title: string
-          updated_at: string
+          content: string
+          tags: string[] | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          content: string
-          created_at?: string
-          extracted_text?: string | null
           id?: string
           notebook_id: string
-          source_type?: string | null
           title: string
-          updated_at?: string
+          content: string
+          tags?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          content?: string
-          created_at?: string
-          extracted_text?: string | null
           id?: string
           notebook_id?: string
-          source_type?: string | null
           title?: string
-          updated_at?: string
+          content?: string
+          tags?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -142,100 +224,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "notebooks"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          email: string
-          full_name: string | null
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          email: string
-          full_name?: string | null
-          id: string
-          updated_at?: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          email?: string
-          full_name?: string | null
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      sources: {
-        Row: {
-          content: string | null
-          created_at: string
-          display_name: string | null
-          file_path: string | null
-          file_size: number | null
-          id: string
-          metadata: Json | null
-          notebook_id: string
-          processing_status: string | null
-          summary: string | null
-          title: string
-          type: Database["public"]["Enums"]["source_type"]
-          updated_at: string
-          url: string | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string
-          display_name?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          metadata?: Json | null
-          notebook_id: string
-          processing_status?: string | null
-          summary?: string | null
-          title: string
-          type: Database["public"]["Enums"]["source_type"]
-          updated_at?: string
-          url?: string | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string
-          display_name?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          metadata?: Json | null
-          notebook_id?: string
-          processing_status?: string | null
-          summary?: string | null
-          title?: string
-          type?: Database["public"]["Enums"]["source_type"]
-          updated_at?: string
-          url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_sources_notebook_id"
-            columns: ["notebook_id"]
-            isOneToOne: false
-            referencedRelation: "notebooks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sources_notebook_id_fkey"
-            columns: ["notebook_id"]
-            isOneToOne: false
-            referencedRelation: "notebooks"
-            referencedColumns: ["id"]
-          },
+          }
         ]
       }
     }
@@ -243,110 +232,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: unknown
-      }
-      match_documents: {
-        Args: { query_embedding: string; match_count?: number; filter?: Json }
-        Returns: {
-          id: number
-          content: string
-          metadata: Json
-          similarity: number
-        }[]
-      }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
-      source_type: "pdf" | "text" | "website" | "youtube" | "audio"
+      genre_type: "history" | "science" | "literature" | "philosophy" | "technology" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -462,7 +351,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      source_type: ["pdf", "text", "website", "youtube", "audio"],
+      genre_type: ["history", "science", "literature", "philosophy", "technology", "other"],
     },
   },
 } as const
