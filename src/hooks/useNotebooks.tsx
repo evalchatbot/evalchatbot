@@ -38,11 +38,23 @@ export const useNotebooks = () => {
       // Then get book counts separately for each notebook
       const notebooksWithCounts = await Promise.all(
         (notebooksData || []).map(async (notebook) => {
-          // Count books that are selected in this notebook
+          // Count books that are selected in this notebook (both individual books and genre books)
           const selectedBooks = notebook.selected_books || [];
-          const count = selectedBooks.length;
+          const selectedGenres = notebook.selected_genres || [];
+          
+          // Get count of books from selected genres
+          let genreBookCount = 0;
+          if (selectedGenres.length > 0) {
+            const { data: genreBooks } = await supabase
+              .from('books')
+              .select('id')
+              .in('genre', selectedGenres);
+            genreBookCount = genreBooks?.length || 0;
+          }
+          
+          const totalCount = selectedBooks.length + genreBookCount;
 
-          return { ...notebook, sources: [{ count }] };
+          return { ...notebook, sources: [{ count: totalCount }] };
         })
       );
 

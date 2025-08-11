@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Upload, FileText, Loader2, RefreshCw } from 'lucide-react';
+import { Send, Plus, BookOpen, Loader2, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -280,11 +280,11 @@ const ChatArea = ({
     <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-hidden">
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-gray-100">
-              <Upload className="h-8 w-8 text-slate-600" />
+              <BookOpen className="h-8 w-8 text-slate-600" />
             </div>
             <h2 className="text-xl font-medium text-gray-900 mb-4">Add books to get started</h2>
             <Button onClick={() => setShowAddBooksDialog(true)}>
-              <Upload className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" />
               Add books
             </Button>
           </div>
