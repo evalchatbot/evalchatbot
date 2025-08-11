@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import AddBooksDialog from './AddBooksDialog';
 import SourceContentViewer from '@/components/chat/SourceContentViewer';
 import { useBooks } from '@/hooks/useBooks';
+import { useSources } from '@/hooks/useSources';
 import { Citation } from '@/types/message';
 
 interface SourcesSidebarProps {
@@ -32,9 +33,10 @@ const SourcesSidebar = ({
   const [selectedSourceForViewing, setSelectedSourceForViewing] = useState<any>(null);
 
   const {
-    books,
-    isLoading
-  } = useBooks(notebookId);
+    sources,
+    isLoading,
+    removeFromNotebook
+  } = useSources(notebookId);
 
   // Get the source content for the selected citation
   const getSourceContent = (citation: Citation) => {
@@ -236,7 +238,7 @@ const SourcesSidebar = ({
             </div>
           ) : books && books.length > 0 ? (
             <div className="space-y-4">
-              {books.map((book) => (
+              {sources.map((book) => (
                 <ContextMenu key={book.id}>
                   <ContextMenuTrigger>
                     <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(book)}>

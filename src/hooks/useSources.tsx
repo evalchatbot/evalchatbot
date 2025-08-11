@@ -1,240 +1,106 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNotebookGeneration } from './useNotebookGeneration';
-import { useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export const useSources = (notebookId?: string) => {
-  const { user } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { generateNotebookContentAsync } = useNotebookGeneration();
 
-  const {
-    data: sources = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['sources', notebookId],
+  // Get books that are selected in this notebook
+  const { data: sources, isLoading } = useQuery({
+    queryKey: ['notebook-books', notebookId],
     queryFn: async () => {
       if (!notebookId) return [];
+
+      // First get the notebook to see which books are selected
+      const { data: notebook, error: notebookError } = await supabase
+        .from('notebooks')
+        .select('selected_books, selected_genres')
+        .eq('id', notebookId)
+        .single();
+
+      if (notebookError) throw notebookError;
+
+      if (!notebook) return [];
+
+      // Get all books that match either the selected books or selected genres
+      let query = supabase.from('books').select('*');
       
-      const { data, error } = await supabase
-        .from('sources')
+      const conditions = [];
+      
+      // Add condition for individually selected books
+      if (notebook.selected_books && notebook.selected_books.length > 0) {
+        conditions.push(`id.in.(${notebook.selected_books.join(',')})`);
+      }
+      
+      // Add condition for selected genres
+      if (notebook.selected_genres && notebook.selected_genres.length > 0) {
+        conditions.push(`genre.in.(${notebook.selected_genres.join(',')})`);
+      }
+      
+      if (conditions.length === 0) return [];
+      
+      // Use OR to combine conditions
+      const { data: books, error } = await supabase
+        .from('books')
         .select('*')
-        .eq('notebook_id', notebookId)
+        .or(conditions.join(','))
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+
+      return books || [];
     },
     enabled: !!notebookId,
   });
 
-  // Set up Realtime subscription for sources table
-  useEffect(() => {
-    if (!notebookId || !user) return;
+  const removeFromNotebook = useMutation({
+    mutationFn: async ({ bookId }: { bookId: string }) => {
+      if (!notebookId) throw new Error('No notebook ID provided');
 
-    console.log('Setting up Realtime subscription for sources table, notebook:', notebookId);
+      // Get current notebook data
+      const { data: notebook, error: fetchError } = await supabase
+        .from('notebooks')
+        .select('selected_books, selected_genres')
+        .eq('id', notebookId)
+        .single();
 
-    const channel = supabase
-      .channel('sources-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'sources',
-          filter: `notebook_id=eq.${notebookId}`
-        },
-        (payload: any) => {
-          console.log('Realtime: Sources change received:', payload);
-          
-          // Update the query cache based on the event type
-          queryClient.setQueryData(['sources', notebookId], (oldSources: any[] = []) => {
-            switch (payload.eventType) {
-              case 'INSERT':
-                // Add new source if it doesn't already exist
-                const newSource = payload.new as any;
-                const existsInsert = oldSources.some(source => source.id === newSource?.id);
-                if (existsInsert) {
-                  console.log('Source already exists, skipping INSERT:', newSource?.id);
-                  return oldSources;
-                }
-                console.log('Adding new source to cache:', newSource);
-                return [newSource, ...oldSources];
-                
-              case 'UPDATE':
-                // Update existing source
-                const updatedSource = payload.new as any;
-                console.log('Updating source in cache:', updatedSource?.id);
-                return oldSources.map(source => 
-                  source.id === updatedSource?.id ? updatedSource : source
-                );
-                
-              case 'DELETE':
-                // Remove deleted source
-                const deletedSource = payload.old as any;
-                console.log('Removing source from cache:', deletedSource?.id);
-                return oldSources.filter(source => source.id !== deletedSource?.id);
-                
-              default:
-                console.log('Unknown event type:', payload.eventType);
-                return oldSources;
-            }
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log('Realtime subscription status for sources:', status);
+      if (fetchError) throw fetchError;
+
+      // Remove the book from selected_books array
+      const updatedBooks = (notebook.selected_books || []).filter(id => id !== bookId);
+
+      // Update the notebook
+      const { error: updateError } = await supabase
+        .from('notebooks')
+        .update({ selected_books: updatedBooks })
+        .eq('id', notebookId);
+
+      if (updateError) throw updateError;
+
+      return { bookId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notebook-books', notebookId] });
+      toast({
+        title: "Book removed",
+        description: "The book has been removed from this notebook.",
       });
-
-    return () => {
-      console.log('Cleaning up Realtime subscription for sources');
-      supabase.removeChannel(channel);
-    };
-  }, [notebookId, user, queryClient]);
-
-  const addSource = useMutation({
-    mutationFn: async (sourceData: {
-      notebookId: string;
-      title: string;
-      type: 'pdf' | 'text' | 'website' | 'youtube' | 'audio';
-      content?: string;
-      url?: string;
-      file_path?: string;
-      file_size?: number;
-      processing_status?: string;
-      metadata?: any;
-    }) => {
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('sources')
-        .insert({
-          notebook_id: sourceData.notebookId,
-          title: sourceData.title,
-          type: sourceData.type,
-          content: sourceData.content,
-          url: sourceData.url,
-          file_path: sourceData.file_path,
-          file_size: sourceData.file_size,
-          processing_status: sourceData.processing_status,
-          metadata: sourceData.metadata || {},
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
     },
-    onSuccess: async (newSource) => {
-      console.log('Source added successfully:', newSource);
-      
-      // The Realtime subscription will handle updating the cache
-      // But we still check for first source to trigger generation
-      const currentSources = queryClient.getQueryData(['sources', notebookId]) as any[] || [];
-      const isFirstSource = currentSources.length === 0;
-      
-      if (isFirstSource && notebookId) {
-        console.log('This is the first source, checking notebook generation status...');
-        
-        // Check notebook generation status
-        const { data: notebook } = await supabase
-          .from('notebooks')
-          .select('generation_status')
-          .eq('id', notebookId)
-          .single();
-        
-        if (notebook?.generation_status === 'pending') {
-          console.log('Triggering notebook content generation...');
-          
-          // Determine if we can trigger generation based on source type and available data
-          const canGenerate = 
-            (newSource.type === 'pdf' && newSource.file_path) ||
-            (newSource.type === 'text' && newSource.content) ||
-            (newSource.type === 'website' && newSource.url) ||
-            (newSource.type === 'youtube' && newSource.url) ||
-            (newSource.type === 'audio' && newSource.file_path);
-          
-          if (canGenerate) {
-            try {
-              await generateNotebookContentAsync({
-                notebookId,
-                filePath: newSource.file_path || newSource.url,
-                sourceType: newSource.type
-              });
-            } catch (error) {
-              console.error('Failed to generate notebook content:', error);
-            }
-          } else {
-            console.log('Source not ready for generation yet - missing required data');
-          }
-        }
-      }
-    },
-  });
-
-  const updateSource = useMutation({
-    mutationFn: async ({ sourceId, updates }: { 
-      sourceId: string; 
-      updates: { 
-        title?: string;
-        file_path?: string;
-        processing_status?: string;
-      }
-    }) => {
-      const { data, error } = await supabase
-        .from('sources')
-        .update(updates)
-        .eq('id', sourceId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: async (updatedSource) => {
-      // The Realtime subscription will handle updating the cache
-      
-      // If file_path was added and this is the first source, trigger generation
-      if (updatedSource.file_path && notebookId) {
-        const currentSources = queryClient.getQueryData(['sources', notebookId]) as any[] || [];
-        const isFirstSource = currentSources.length === 1;
-        
-        if (isFirstSource) {
-          const { data: notebook } = await supabase
-            .from('notebooks')
-            .select('generation_status')
-            .eq('id', notebookId)
-            .single();
-          
-          if (notebook?.generation_status === 'pending') {
-            console.log('File path updated, triggering notebook content generation...');
-            
-            try {
-              await generateNotebookContentAsync({
-                notebookId,
-                filePath: updatedSource.file_path,
-                sourceType: updatedSource.type
-              });
-            } catch (error) {
-              console.error('Failed to generate notebook content:', error);
-            }
-          }
-        }
-      }
+    onError: (error) => {
+      console.error('Error removing book from notebook:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove book from notebook. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
   return {
     sources,
     isLoading,
-    error,
-    addSource: addSource.mutate,
-    addSourceAsync: addSource.mutateAsync,
-    isAdding: addSource.isPending,
-    updateSource: updateSource.mutate,
-    isUpdating: updateSource.isPending,
+    removeFromNotebook: removeFromNotebook.mutate,
+    isRemoving: removeFromNotebook.isPending,
   };
 };
