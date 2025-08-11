@@ -14,6 +14,7 @@ import { Citation } from '@/types/message';
 const Notebook = () => {
   const { id: notebookId } = useParams();
   const { notebooks } = useNotebooks();
+  const { sources } = useSources(notebookId);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
   const isDesktop = useIsDesktop();
 
