@@ -103,11 +103,11 @@ export const useNotebooks = () => {
       const { data, error } = await supabase
         .from('notebooks')
         .insert({
-          name: notebookData.title,
+          name: notebookData.title || 'Untitled Notebook',
           user_id: user.id,
           selected_books: [],
           selected_genres: [],
-          memory_summary: notebookData.description || '',
+          memory_summary: '',
           key_facts: [],
         })
         .select()

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Globe, Video, Mic } from 'lucide-react';
+import { Plus, BookOpen, Library, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotebooks } from '@/hooks/useNotebooks';
 const EmptyDashboard = () => {

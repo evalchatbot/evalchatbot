@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Database } from '@/integrations/supabase/types';
+
+type GenreType = Database['public']['Enums']['genre_type'];
 
 export const useBooks = (notebookId?: string) => {
   const { user } = useAuth();
@@ -41,28 +44,41 @@ export const useBooks = (notebookId?: string) => {
   });
 
   const addBookToNotebook = useMutation({
-    mutationFn: async (bookId: string) => {
+    mutationFn: async ({ bookIds, genres }: { bookIds?: string[], genres?: GenreType[] }) => {
       if (!notebookId) throw new Error('Notebook ID is required');
       
       // Get current selected books
       const { data: notebook, error: fetchError } = await supabase
         .from('notebooks')
-        .select('selected_books')
+        .select('selected_books, selected_genres')
         .eq('id', notebookId)
         .single();
 
       if (fetchError) throw fetchError;
 
       const currentBooks = notebook.selected_books || [];
-      if (currentBooks.includes(bookId)) {
-        throw new Error('Book already added to notebook');
+      const currentGenres = notebook.selected_genres || [];
+      
+      let updatedBooks = [...currentBooks];
+      let updatedGenres = [...currentGenres];
+      
+      // Add individual books if provided
+      if (bookIds) {
+        const newBooks = bookIds.filter(id => !currentBooks.includes(id));
+        updatedBooks = [...updatedBooks, ...newBooks];
+      }
+      
+      // Add genres if provided
+      if (genres) {
+        const newGenres = genres.filter(genre => !currentGenres.includes(genre));
+        updatedGenres = [...updatedGenres, ...newGenres];
       }
 
-      // Add the book to selected_books array
       const { data, error } = await supabase
         .from('notebooks')
         .update({
-          selected_books: [...currentBooks, bookId]
+          selected_books: updatedBooks,
+          selected_genres: updatedGenres
         })
         .eq('id', notebookId)
         .select()
@@ -78,26 +94,37 @@ export const useBooks = (notebookId?: string) => {
   });
 
   const removeBookFromNotebook = useMutation({
-    mutationFn: async (bookId: string) => {
+    mutationFn: async ({ bookId, genre }: { bookId?: string, genre?: GenreType }) => {
       if (!notebookId) throw new Error('Notebook ID is required');
       
       // Get current selected books
       const { data: notebook, error: fetchError } = await supabase
         .from('notebooks')
-        .select('selected_books')
+        .select('selected_books, selected_genres')
         .eq('id', notebookId)
         .single();
 
       if (fetchError) throw fetchError;
 
       const currentBooks = notebook.selected_books || [];
-      const updatedBooks = currentBooks.filter(id => id !== bookId);
+      const currentGenres = notebook.selected_genres || [];
+      
+      let updatedBooks = [...currentBooks];
+      let updatedGenres = [...currentGenres];
+      
+      if (bookId) {
+        updatedBooks = currentBooks.filter(id => id !== bookId);
+      }
+      
+      if (genre) {
+        updatedGenres = currentGenres.filter(g => g !== genre);
+      }
 
-      // Update the selected_books array
       const { data, error } = await supabase
         .from('notebooks')
         .update({
-          selected_books: updatedBooks
+          selected_books: updatedBooks,
+          selected_genres: updatedGenres
         })
         .eq('id', notebookId)
         .select()
@@ -116,9 +143,9 @@ export const useBooks = (notebookId?: string) => {
     books,
     isLoading,
     error,
-    addBookToNotebook: addBookToNotebook.mutate,
+    addBooksToNotebook: addBookToNotebook.mutate,
     isAdding: addBookToNotebook.isPending,
-    removeBookFromNotebook: removeBookFromNotebook.mutate,
+    removeFromNotebook: removeBookFromNotebook.mutate,
     isRemoving: removeBookFromNotebook.isPending,
   };
 };

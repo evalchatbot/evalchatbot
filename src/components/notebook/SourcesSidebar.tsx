@@ -165,9 +165,7 @@ const SourcesSidebar = ({
 
   const confirmDelete = () => {
     if (selectedSource) {
-      // Remove book from notebook instead of deleting
-      const { removeBookFromNotebook } = useBooks(notebookId);
-      removeBookFromNotebook(selectedSource.id);
+      removeFromNotebook({ bookId: selectedSource.id });
       setShowDeleteDialog(false);
       setSelectedSource(null);
     }
@@ -258,7 +256,7 @@ const SourcesSidebar = ({
                   <ContextMenuContent>
                     <ContextMenuItem onClick={() => handleRemoveSource(book)} className="text-red-600 focus:text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Remove book
+                      Remove from notebook
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
@@ -270,7 +268,7 @@ const SourcesSidebar = ({
                 <span className="text-gray-400 text-2xl">📄</span>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Saved sources will appear here</h3>
-              <p className="text-sm text-gray-600 mb-4">Click Add source above to add PDFs, text, or audio files.</p>
+              <p className="text-sm text-gray-600 mb-4">Click Add to select books from the library.</p>
             </div>
           )}
         </div>
@@ -288,7 +286,7 @@ const SourcesSidebar = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedSource?.title}?</AlertDialogTitle>
             <AlertDialogDescription>
-              You're about to remove this book from the notebook.
+              You're about to remove this book from the notebook. The book will remain in the library.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -298,7 +296,7 @@ const SourcesSidebar = ({
               className="bg-red-600 hover:bg-red-700" 
               disabled={false}
             >
-              Remove
+              Remove from Notebook
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
