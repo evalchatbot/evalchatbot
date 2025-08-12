@@ -27,10 +27,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get the notebook to find selected books
+    // Get the notebook to find selected books and user_id
     const { data: notebook, error: notebookError } = await supabase
       .from('notebooks')
-      .select('selected_books, selected_genres')
+      .select('selected_books, selected_genres, user_id')
       .eq('id', notebookId)
       .single();
 
@@ -64,7 +64,7 @@ serve(async (req) => {
       body: JSON.stringify({
         message: message,
         notebook_id: notebookId,
-        book_ids: allBookIds
+        user_id: notebook.user_id
       })
     });
 
