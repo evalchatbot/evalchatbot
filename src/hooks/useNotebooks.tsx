@@ -32,6 +32,10 @@ export const useNotebooks = () => {
 
       if (notebooksError) {
         console.error('Error fetching notebooks:', notebooksError);
+        // Provide more specific error information
+        if (notebooksError.message?.includes('fetch')) {
+          throw new Error('Unable to connect to Supabase. Please check your internet connection and Supabase configuration.');
+        }
         throw notebooksError;
       }
 
