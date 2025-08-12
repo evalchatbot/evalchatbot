@@ -223,22 +223,18 @@ const AddBooksDialog = ({
                                       <Check className="h-4 w-4 mr-1" />
                                       <span className="text-xs">Added</span>
                                     </div>
-                                  ) : isSelected ? (
-                                    <div className="flex items-center text-blue-600">
-                                      <Check className="h-4 w-4 mr-1" />
-                                      <span className="text-xs">Selected</span>
-                                    </div>
                                   ) : (
                                     <Button
-                                      variant="ghost"
+                                      variant="default"
                                       size="sm"
-                                      className="h-8 w-8 p-0"
+                                      className="h-8 px-3"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleBookToggle(book.id, genre);
+                                        addBooksToNotebook({ bookIds: [book.id] });
                                       }}
+                                      disabled={isAdding}
                                     >
-                                      <Plus className="h-4 w-4" />
+                                      {isAdding ? 'Adding...' : 'Add'}
                                     </Button>
                                   )}
                                 </div>
