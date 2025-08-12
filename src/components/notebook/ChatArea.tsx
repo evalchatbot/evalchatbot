@@ -52,12 +52,12 @@ const ChatArea = ({
     isDeletingChatHistory
   } = useChatMessages(notebookId);
   
-  const { data: books } = useBooks(notebookId);
+  const { books } = useBooks(notebookId);
   
   const sourceCount = notebook?.selected_books?.length || 0;
 
-  // Books from the database are always considered "processed" and ready for chat
-  const hasProcessedSource = books && books.length > 0;
+  // Check if we have books available for chat
+  const hasProcessedSource = (books && books.length > 0) || (notebook?.selected_books && notebook.selected_books.length > 0);
 
   // Chat should be disabled if there are no processed sources
   const isChatDisabled = !hasProcessedSource;
