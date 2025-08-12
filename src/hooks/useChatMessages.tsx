@@ -354,12 +354,43 @@ const transformDbRowToChatMessages = (item: any, bookMap: Map<string, any>): Enh
   const messages = [userMessage];
   
   if (item.assistant_response) {
+    // Try to parse citations if they exist
+    let messageContent: string | { segments: MessageSegment[]; citations: Citation[] };
+    
+    if (item.citations && Array.isArray(item.citations) && item.citations.length > 0) {
+      // Transform citations to our expected format
+      const transformedCitations: Citation[] = item.citations.map((citation: any, index: number) => ({
+        citation_id: index + 1,
+        source_id: citation.source_id || '',
+        source_title: citation.source_title || 'Unknown Source',
+        source_type: citation.source_type || 'book',
+        chunk_lines_from: citation.chunk_lines_from,
+        chunk_lines_to: citation.chunk_lines_to,
+        chunk_index: citation.chunk_index || index,
+        excerpt: citation.excerpt
+      }));
+      
+      // Create segments with citations
+      const segments: MessageSegment[] = [{
+        text: item.assistant_response,
+        citation_id: transformedCitations.length > 0 ? 1 : undefined
+      }];
+      
+      messageContent = {
+        segments,
+        citations: transformedCitations
+      };
+    } else {
+      // Simple string content without citations
+      messageContent = item.assistant_response;
+    }
+    
     const assistantMessage: EnhancedChatMessage = {
       id: `${item.id}-assistant`,
       session_id: item.notebook_id,
       message: {
         type: 'ai',
-        content: item.assistant_response
+        content: messageContent
       }
     };
     messages.push(assistantMessage);
