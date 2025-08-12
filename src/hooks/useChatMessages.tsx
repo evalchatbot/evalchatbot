@@ -219,8 +219,11 @@ export const useChatMessages = (notebookId?: string) => {
         async (payload) => {
           console.log('Realtime: New message received:', payload);
           
-          // Simply invalidate and refetch the query to get the latest messages
-          queryClient.invalidateQueries({ queryKey: ['chat-messages', notebookId] });
+          // Use a more targeted approach - refetch without invalidating
+          queryClient.refetchQueries({ 
+            queryKey: ['chat-messages', notebookId],
+            type: 'active'
+          });
         }
       )
       .subscribe((status) => {
