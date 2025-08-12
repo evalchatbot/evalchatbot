@@ -24,13 +24,6 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
-  // Redirect to dashboard if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('User is authenticated, redirecting to dashboard');
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
 
   // Update auth mode when prop changes
   useEffect(() => {

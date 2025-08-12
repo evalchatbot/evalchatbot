@@ -92,7 +92,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     let mounted = true;
 
-    // Initialize auth state first, then set up listener
     const initializeAuth = async () => {
       try {
         console.log('AuthContext: Initializing auth...');
@@ -136,7 +135,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     };
 
-    // Set up auth state listener AFTER initial auth check
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (!mounted) return;
@@ -158,6 +157,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Create user profile for new signups
           if (event === 'SIGNED_UP' && newSession?.user) {
             createUserProfile(newSession.user);
+          }
+          
+          // Navigate to dashboard after successful authentication
+          if (event === 'SIGNED_IN' || event === 'SIGNED_UP') {
+            // Use setTimeout to ensure state updates are complete
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 100);
           }
           return;
         }
@@ -195,7 +202,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     };
 
-    // Initialize auth state first, then set up listener
+    // Initialize auth state
     initializeAuth();
 
     return () => {

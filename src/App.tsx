@@ -18,6 +18,8 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/signup" element={<Auth mode="signup" />} />
       <Route 
         path="/dashboard" 
         element={
@@ -42,8 +44,6 @@ const AppContent = () => {
           </ProtectedRoute>
         } 
       />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/signup" element={<Auth mode="signup" />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
