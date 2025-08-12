@@ -126,15 +126,6 @@ const Landing = () => {
                 className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => window.open('https://www.youtube.com/watch?v=IXJEGjfZRBE', '_blank')}
               />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Button 
-                  size="lg" 
-                  className="bg-red-600 hover:bg-red-700 text-white rounded-full p-6"
-                  onClick={() => window.open('https://www.youtube.com/watch?v=IXJEGjfZRBE', '_blank')}
-                >
-                  <Youtube className="h-8 w-8" />
-                </Button>
-              </div>
             </div>
           </div>
         </div>
