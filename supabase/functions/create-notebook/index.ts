@@ -27,25 +27,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Call your FastAPI backend
-    const backendResponse = await fetch('https://evalchatbot-backend.onrender.com/api/notebooks', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: name,
-        selected_books: [],
-        selected_genres: []
-      }),
-      // Add query parameter for user_id
-    });
-
-    // Add user_id as query parameter
+    // Call your FastAPI backend with user_id as query parameter
     const backendUrl = new URL('https://evalchatbot-backend.onrender.com/api/notebooks');
     backendUrl.searchParams.append('user_id', user_id);
 
-    const backendResponseWithUserId = await fetch(backendUrl.toString(), {
+    const backendResponse = await fetch(backendUrl.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,13 +43,13 @@ serve(async (req) => {
       })
     });
 
-    if (!backendResponseWithUserId.ok) {
-      const errorText = await backendResponseWithUserId.text();
-      console.error('Backend API error:', backendResponseWithUserId.status, errorText);
-      throw new Error(`Backend API error: ${backendResponseWithUserId.status}`);
+    if (!backendResponse.ok) {
+      const errorText = await backendResponse.text();
+      console.error('Backend API error:', backendResponse.status, errorText);
+      throw new Error(`Backend API error: ${backendResponse.status}`);
     }
 
-    const backendData = await backendResponseWithUserId.json();
+    const backendData = await backendResponse.json();
     console.log('Backend response:', backendData);
 
     // Create the notebook in Supabase database
