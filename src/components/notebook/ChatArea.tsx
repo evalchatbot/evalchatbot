@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useChatMessages } from '@/hooks/useChatMessages';
-import { useSources } from '@/hooks/useSources';
+import { useBooks } from '@/hooks/useBooks';
 import MarkdownRenderer from '@/components/chat/MarkdownRenderer';
 import SaveToNoteButton from './SaveToNoteButton';
 import AddBooksDialog from './AddBooksDialog';
@@ -51,6 +51,8 @@ const ChatArea = ({
     deleteChatHistory,
     isDeletingChatHistory
   } = useChatMessages(notebookId);
+  
+  const { data: books } = useBooks(notebookId);
   
   const sourceCount = notebook?.selected_books?.length || 0;
 
