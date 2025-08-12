@@ -77,7 +77,7 @@ const Landing = () => {
           <div className="text-center">
             <HandWrittenTitle 
               title="InsightsLM" 
-              subtitle="The Open Source NotebookLM Alternative"
+              subtitle="Chat with Your Books and Documents"
             />
             
             <div className="max-w-3xl mx-auto mt-8">
