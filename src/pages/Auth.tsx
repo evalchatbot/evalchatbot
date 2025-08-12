@@ -1,7 +1,11 @@
 import React from 'react';
 import AuthForm from '@/components/auth/AuthForm';
 import Logo from '@/components/ui/Logo';
-const Auth = () => {
+interface AuthProps {
+  mode?: 'signin' | 'signup';
+}
+
+const Auth = ({ mode = 'signin' }: AuthProps) => {
   return <div className="min-h-screen flex items-center justify-center px-4 bg-white">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -11,7 +15,7 @@ const Auth = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">InsightsLM</h1>
           <p className="text-gray-600">Your AI-powered knowledge companion</p>
         </div>
-        <AuthForm />
+        <AuthForm mode={mode} />
       </div>
     </div>;
 };

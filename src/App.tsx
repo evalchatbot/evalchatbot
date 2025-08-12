@@ -41,6 +41,7 @@ const AppContent = () => {
         } 
       />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/signup" element={<Auth mode="signup" />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

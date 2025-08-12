@@ -106,10 +106,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
         
-        // Handle sign in events
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Handle sign in and sign up events
+        if (event === 'SIGNED_IN' || event === 'SIGNED_UP' || event === 'TOKEN_REFRESHED') {
           updateAuthState(newSession);
           setLoading(false);
+          
+          // Create user profile for new signups
+          if (event === 'SIGNED_UP' && newSession?.user) {
+            createUserProfile(newSession.user);
+          }
           return;
         }
         
@@ -120,6 +125,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
     );
+
+    const createUserProfile = async (user: any) => {
+      try {
+        console.log('Creating user profile for:', user.email);
+        
+        const { error } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || null,
+          });
+
+        if (error) {
+          // If user already exists, that's fine
+          if (!error.message.includes('duplicate key')) {
+            console.error('Error creating user profile:', error);
+          }
+        } else {
+          console.log('User profile created successfully');
+        }
+      } catch (err) {
+        console.error('Unexpected error creating user profile:', err);
+      }
+    };
 
     const initializeAuth = async () => {
       try {
