@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, MoreVertical, Trash2, Edit, Loader2, CheckCircle, XCircle, Upload } from 'lucide-react';
+import { Plus, MoreVertical, Trash2, Edit, Loader2, CheckCircle, XCircle, Upload, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import AddBooksDialog from './AddBooksDialog';
 import SourceContentViewer from '@/components/chat/SourceContentViewer';
-import { useBooks } from '@/hooks/useBooks';
 import { useSources } from '@/hooks/useSources';
+import { useBooks } from '@/hooks/useBooks';
 import { Citation } from '@/types/message';
 
 interface SourcesSidebarProps {
@@ -38,8 +38,11 @@ const SourcesSidebar = ({
   } = useSources(notebookId);
 
   const {
+    books,
     addBooksToNotebook,
-    isAdding
+    isAdding,
+    removeFromNotebook: removeBookFromNotebook,
+    isRemoving
   } = useBooks(notebookId);
 
   // Get the source content for the selected citation
@@ -127,6 +130,9 @@ const SourcesSidebar = ({
     setShowDeleteDialog(true);
   };
 
+  const handleRemoveBook = (bookId: string) => {
+    removeBookFromNotebook({ bookId });
+  };
 
   const handleSourceClick = (source: any) => {
     console.log('SourcesSidebar: Source clicked from list', {
@@ -240,40 +246,39 @@ const SourcesSidebar = ({
             <div className="text-center py-8">
               <p className="text-sm text-gray-600">Loading sources...</p>
             </div>
-          ) : sources && sources.length > 0 ? (
+          ) : books && books.length > 0 ? (
             <div className="space-y-4">
-              {sources.map((source) => (
-                <ContextMenu key={source.id}>
+              {books.map((book) => (
+                <ContextMenu key={book.id}>
                   <ContextMenuTrigger>
-                    <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(source)}>
+                    <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(book)}>
                       <div className="flex items-start justify-between space-x-3">
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
                           <div className="w-6 h-6 bg-white rounded border border-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             📚
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-gray-900 truncate block">{source.title}</span>
-                            <span className="text-xs text-gray-500 truncate block">by {source.author}</span>
+                            <span className="text-sm text-gray-900 truncate block">{book.title}</span>
+                            <span className="text-xs text-gray-500 truncate block">by {book.author}</span>
                           </div>
                         </div>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            addBooksToNotebook({ bookIds: [source.id] });
+                            handleRemoveBook(book.id);
                           }}
-                          disabled={isAdding}
+                          disabled={isRemoving}
                           className="flex-shrink-0"
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
                     </Card>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem onClick={() => handleRemoveSource(source)} className="text-red-600 focus:text-red-600">
+                    <ContextMenuItem onClick={() => handleRemoveBook(book.id)} className="text-red-600 focus:text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Remove from notebook
                     </ContextMenuItem>
