@@ -54,8 +54,8 @@ const ChatArea = ({
   
   const sourceCount = notebook?.selected_books?.length || 0;
 
-  // For now, assume books are always "processed" since they're in the database
-  const hasProcessedSource = sourceCount > 0;
+  // Books from the database are always considered "processed" and ready for chat
+  const hasProcessedSource = books && books.length > 0;
 
   // Chat should be disabled if there are no processed sources
   const isChatDisabled = !hasProcessedSource;
@@ -249,7 +249,7 @@ const ChatArea = ({
                 <div className="flex-1 relative">
                   <Input placeholder={getPlaceholderText()} value={message} onChange={e => setMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && !isChatDisabled && !isSending && !pendingUserMessage && handleSendMessage()} className="pr-12" disabled={isChatDisabled || isSending || !!pendingUserMessage} />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
-                    {sourceCount} book{sourceCount !== 1 ? 's' : ''}
+                    {books?.length || 0} book{(books?.length || 0) !== 1 ? 's' : ''}
                   </div>
                 </div>
                 <Button onClick={() => handleSendMessage()} disabled={!message.trim() || isChatDisabled || isSending || !!pendingUserMessage}>
