@@ -82,8 +82,8 @@ const Landing = () => {
             
             <div className="max-w-3xl mx-auto mt-8">
               <p className="text-xl text-gray-600 leading-relaxed mb-8">
-                What if the power of a tool like NotebookLM wasn't locked away in a closed system? 
-                Build a private, self-hosted alternative that can be customized for your business needs.
+                Unlock the power of conversational learning with your personal library. 
+                Chat naturally with your books and documents to discover insights, get answers, and explore ideas like never before.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
