@@ -273,6 +273,7 @@ const AddBooksDialog = ({
               Cancel
             </Button>
             <Button 
+             className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={handleAddToNotebook}
               disabled={totalNewSelections === 0 || isAdding}
             >
