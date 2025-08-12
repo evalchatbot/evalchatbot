@@ -63,7 +63,7 @@ const Landing = () => {
               <Button variant="ghost" onClick={() => navigate('/auth')}>
                 Sign In
               </Button>
-              <Button onClick={() => navigate('/auth?mode=signup')} className="bg-black hover:bg-gray-800">
+              <Button onClick={() => navigate('/signup')} className="bg-black hover:bg-gray-800">
                 Get Started
               </Button>
             </div>
@@ -90,7 +90,7 @@ const Landing = () => {
                 <Button 
                   size="lg" 
                   className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-lg"
-                  onClick={() => navigate('/auth?mode=signup')}
+                  onClick={() => navigate('/signup')}
                 >
                   Start Building
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -196,7 +196,7 @@ const Landing = () => {
             <Button 
               size="lg" 
               className="bg-white text-black hover:bg-gray-100 px-8 py-3 text-lg"
-              onClick={() => navigate('/auth?mode=signup')}
+              onClick={() => navigate('/signup')}
             >
               Create Account
               <ArrowRight className="ml-2 h-5 w-5" />
