@@ -21,16 +21,6 @@ const Landing = () => {
       description: "Jump directly to the source of information to ensure accuracy and prevent AI hallucinations."
     },
     {
-      icon: <Mic className="h-8 w-8 text-purple-600" />,
-      title: "Podcast Generation",
-      description: "Create audio summaries and discussions from your source materials, just like NotebookLM."
-    },
-    {
-      icon: <Shield className="h-8 w-8 text-red-600" />,
-      title: "Private & Self-Hosted",
-      description: "Maintain complete control over your data by hosting it yourself. Use local models if you wish."
-    },
-    {
       icon: <Brain className="h-8 w-8 text-indigo-600" />,
       title: "AI-Powered Research",
       description: "Advanced AI that understands context and provides intelligent insights from your documents."
@@ -39,6 +29,16 @@ const Landing = () => {
       icon: <Zap className="h-8 w-8 text-yellow-600" />,
       title: "Customizable & Extensible",
       description: "Built with modern tools, making it easy to tailor to your specific research needs."
+    },
+    {
+      icon: <BookOpen className="h-8 w-8 text-emerald-600" />,
+      title: "Smart Document Analysis",
+      description: "Advanced AI that understands document structure and extracts meaningful insights from your content."
+    },
+    {
+      icon: <Shield className="h-8 w-8 text-red-600" />,
+      title: "Secure & Reliable",
+      description: "Built with enterprise-grade security and reliability to protect your valuable research data."
     }
   ];
 
@@ -110,26 +110,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Demo Video Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">See InsightsLM in Action</h2>
-            <p className="text-xl text-gray-600">Watch our complete walkthrough and setup guide</p>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl bg-gray-900">
-              <img 
-                src="https://raw.githubusercontent.com/theaiautomators/insights-lm-public/main/public/video.png"
-                alt="InsightsLM Demo Video"
-                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={() => window.open('https://www.youtube.com/watch?v=IXJEGjfZRBE', '_blank')}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Features Section */}
       <section className="py-20">
