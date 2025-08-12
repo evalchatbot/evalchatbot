@@ -17,7 +17,7 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   return (
     <Routes>
-      <Route path="/landing" element={<Landing />} />
+      <Route path="/" element={<Landing />} />
       <Route 
         path="/dashboard" 
         element={
@@ -26,7 +26,6 @@ const AppContent = () => {
           </ProtectedRoute>
         } 
       />
-      <Route path="/" element={<Landing />} />
       <Route 
         path="/notebook" 
         element={

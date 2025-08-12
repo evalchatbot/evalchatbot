@@ -92,7 +92,51 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener FIRST
+    // Initialize auth state first, then set up listener
+    const initializeAuth = async () => {
+      try {
+        console.log('AuthContext: Initializing auth...');
+        
+        // Get initial session
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('AuthContext: Error getting initial session:', sessionError);
+          
+          // If the session is invalid, clear local state
+          if (sessionError.message.includes('session_not_found') || 
+              sessionError.message.includes('Session not found')) {
+            console.log('AuthContext: Session not found on server, clearing local session');
+            await supabase.auth.signOut({ scope: 'local' });
+            if (mounted) {
+              clearAuthState();
+              setLoading(false);
+            }
+            return;
+          }
+          
+          if (mounted) {
+            setError(sessionError.message);
+            setLoading(false);
+          }
+          return;
+        }
+        
+        if (mounted) {
+          console.log('AuthContext: Initial session:', initialSession?.user?.email || 'No session');
+          updateAuthState(initialSession);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('AuthContext: Auth initialization error:', err);
+        if (mounted) {
+          setError(err instanceof Error ? err.message : 'Authentication error');
+          setLoading(false);
+        }
+      }
+    };
+
+    // Set up auth state listener AFTER initial auth check
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (!mounted) return;
@@ -151,50 +195,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     };
 
-    const initializeAuth = async () => {
-      try {
-        console.log('AuthContext: Initializing auth...');
-        
-        // Get initial session
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('AuthContext: Error getting initial session:', sessionError);
-          
-          // If the session is invalid, clear local state
-          if (sessionError.message.includes('session_not_found') || 
-              sessionError.message.includes('Session not found')) {
-            console.log('AuthContext: Session not found on server, clearing local session');
-            await supabase.auth.signOut({ scope: 'local' });
-            if (mounted) {
-              clearAuthState();
-              setLoading(false);
-            }
-            return;
-          }
-          
-          if (mounted) {
-            setError(sessionError.message);
-            setLoading(false);
-          }
-          return;
-        }
-        
-        if (mounted) {
-          console.log('AuthContext: Initial session:', initialSession?.user?.email || 'No session');
-          updateAuthState(initialSession);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('AuthContext: Auth initialization error:', err);
-        if (mounted) {
-          setError(err instanceof Error ? err.message : 'Authentication error');
-          setLoading(false);
-        }
-      }
-    };
-
-    // Initialize auth state after setting up listener
+    // Initialize auth state first, then set up listener
     initializeAuth();
 
     return () => {
