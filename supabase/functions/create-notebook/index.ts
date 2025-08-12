@@ -1,12 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,32 +26,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Call your FastAPI backend with user_id as query parameter
-    const backendUrl = new URL('https://evalchatbot-backend.onrender.com/api/notebooks');
-    backendUrl.searchParams.append('user_id', user_id);
-
-    const backendResponse = await fetch(backendUrl.toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: name,
-        selected_books: [],
-        selected_genres: []
-      })
-    });
-
-    if (!backendResponse.ok) {
-      const errorText = await backendResponse.text();
-      console.error('Backend API error:', backendResponse.status, errorText);
-      throw new Error(`Backend API error: ${backendResponse.status}`);
-    }
-
-    const backendData = await backendResponse.json();
-    console.log('Backend response:', backendData);
-
-    // Create the notebook in Supabase database
+    // Create the notebook in Supabase database FIRST
     const { data: notebook, error: notebookError } = await supabase
       .from('notebooks')
       .insert({
@@ -69,6 +43,35 @@ serve(async (req) => {
     if (notebookError) {
       console.error('Error creating notebook in Supabase:', notebookError);
       throw new Error(`Failed to create notebook: ${notebookError.message}`);
+    }
+
+    // Try to call backend API, but don't fail if it's unavailable
+    let backendData = null;
+    try {
+      const backendUrl = new URL('https://evalchatbot-backend.onrender.com/api/notebooks');
+      backendUrl.searchParams.append('user_id', user_id);
+
+      const backendResponse = await fetch(backendUrl.toString(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name,
+          selected_books: [],
+          selected_genres: []
+        })
+      });
+
+      if (backendResponse.ok) {
+        backendData = await backendResponse.json();
+        console.log('Backend response:', backendData);
+      } else {
+        const errorText = await backendResponse.text();
+        console.warn('Backend API error (non-blocking):', backendResponse.status, errorText);
+      }
+    } catch (backendError) {
+      console.warn('Backend API call failed (non-blocking):', backendError);
     }
 
     return new Response(
