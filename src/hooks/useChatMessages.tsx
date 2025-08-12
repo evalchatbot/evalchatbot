@@ -193,7 +193,7 @@ export const useChatMessages = (notebookId?: string) => {
       console.log('Books map:', bookMap);
       
       // Transform the data to match our expected format
-      return data.map((item) => transformChatMessage(item, bookMap));
+      return data.flatMap((item) => transformDbRowToChatMessages(item, bookMap));
     },
     enabled: !!notebookId && !!user,
     refetchOnMount: true,
@@ -227,19 +227,21 @@ export const useChatMessages = (notebookId?: string) => {
           const bookMap = new Map(booksData?.map(b => [b.id, { title: b.title, type: 'book' }]) || []);
           
           // Transform the new message
-          const newMessage = transformChatMessage(payload.new, bookMap);
+          const newMessages = transformDbRowToChatMessages(payload.new, bookMap);
           
           // Update the query cache with the new message
           queryClient.setQueryData(['chat-messages', notebookId], (oldMessages: EnhancedChatMessage[] = []) => {
-            // Check if message already exists to prevent duplicates
-            const messageExists = oldMessages.some(msg => msg.id === newMessage.id);
-            if (messageExists) {
-              console.log('Message already exists, skipping:', newMessage.id);
+            // Check if messages already exist to prevent duplicates
+            const existingIds = new Set(oldMessages.map(msg => msg.id));
+            const newMessagesToAdd = newMessages.filter(msg => !existingIds.has(msg.id));
+            
+            if (newMessagesToAdd.length === 0) {
+              console.log('Messages already exist, skipping');
               return oldMessages;
             }
             
-            console.log('Adding new message to cache:', newMessage);
-            return [...oldMessages, newMessage];
+            console.log('Adding new messages to cache:', newMessagesToAdd);
+            return [...oldMessages, ...newMessagesToAdd];
           });
         }
       )
@@ -334,8 +336,8 @@ export const useChatMessages = (notebookId?: string) => {
   };
 };
 
-// Transform function for the new chat_messages table structure
-const transformChatMessage = (item: any, bookMap: Map<string, any>): EnhancedChatMessage => {
+// Helper function to transform a database row into chat messages
+const transformDbRowToChatMessages = (item: any, bookMap: Map<string, any>): EnhancedChatMessage[] => {
   console.log('Processing chat message item:', item);
   
   // Create user message
@@ -349,15 +351,19 @@ const transformChatMessage = (item: any, bookMap: Map<string, any>): EnhancedCha
   };
   
   // Create assistant message if response exists
-  const assistantMessage: EnhancedChatMessage = {
-    id: `${item.id}-assistant`,
-    session_id: item.notebook_id,
-    message: {
-      type: 'ai',
-      content: item.assistant_response || 'No response yet'
-    }
-  };
+  const messages = [userMessage];
   
-  // For now, return both messages - you may want to adjust this based on your UI needs
-  return [userMessage, assistantMessage] as any;
+  if (item.assistant_response) {
+    const assistantMessage: EnhancedChatMessage = {
+      id: `${item.id}-assistant`,
+      session_id: item.notebook_id,
+      message: {
+        type: 'ai',
+        content: item.assistant_response
+      }
+    };
+    messages.push(assistantMessage);
+  }
+  
+  return messages;
 };
