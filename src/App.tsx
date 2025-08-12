@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Notebook from "./pages/Notebook";
 import Auth from "./pages/Auth";
@@ -16,14 +17,16 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   return (
     <Routes>
+      <Route path="/landing" element={<Landing />} />
       <Route 
-        path="/" 
+        path="/dashboard" 
         element={
           <ProtectedRoute fallback={<Auth />}>
             <Dashboard />
           </ProtectedRoute>
         } 
       />
+      <Route path="/" element={<Landing />} />
       <Route 
         path="/notebook" 
         element={

@@ -3,9 +3,11 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Dashboard from './Dashboard';
 import Auth from './Auth';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const { isAuthenticated, loading, error } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -34,7 +36,13 @@ const Index = () => {
     );
   }
 
-  return isAuthenticated ? <Dashboard /> : <Auth />;
+  // Redirect authenticated users to dashboard
+  if (isAuthenticated) {
+    navigate('/dashboard');
+    return null;
+  }
+  
+  return <Auth />;
 };
 
 export default Index;

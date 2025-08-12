@@ -56,7 +56,7 @@ const NotebookHeader = ({ title, notebookId }: NotebookHeaderProps) => {
   };
 
   const handleIconClick = () => {
-    navigate('/');
+    navigate('/dashboard');
   };
 
   return (
