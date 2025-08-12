@@ -112,26 +112,21 @@ export const useNotebooks = () => {
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase
-        .from('notebooks')
-        .insert({
+      // Call the Supabase Edge Function to create notebook via backend
+      const { data, error } = await supabase.functions.invoke('create-notebook', {
+        body: {
           name: notebookData.title || 'Untitled Notebook',
-          user_id: user.id,
-          selected_books: [],
-          selected_genres: [],
-          memory_summary: '',
-          key_facts: [],
-        })
-        .select()
-        .single();
+          user_id: user.id
+        }
+      });
 
       if (error) {
-        console.error('Error creating notebook:', error);
+        console.error('Error creating notebook via Edge Function:', error);
         throw error;
       }
       
-      console.log('Notebook created successfully:', data);
-      return data;
+      console.log('Notebook created successfully:', data.notebook);
+      return data.notebook;
     },
     onSuccess: (data) => {
       console.log('Mutation success, invalidating queries');
