@@ -95,15 +95,6 @@ const Landing = () => {
                   Start Building
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="px-8 py-3 text-lg"
-                  onClick={() => window.open('https://github.com/theaiautomators/insights-lm-public', '_blank')}
-                >
-                  <Github className="mr-2 h-5 w-5" />
-                  View on GitHub
-                </Button>
               </div>
             </div>
           </div>
