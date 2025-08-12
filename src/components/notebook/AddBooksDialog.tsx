@@ -280,6 +280,8 @@ const AddBooksDialog = ({
             </Button>
           </div>
         </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
