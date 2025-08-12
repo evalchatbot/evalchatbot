@@ -258,29 +258,28 @@ const AddBooksDialog = ({
             </div>
           )}
 
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div className="text-sm text-gray-600">
-              {totalNewSelections > 0 && (
-                <span>{totalNewSelections} new book{totalNewSelections !== 1 ? 's' : ''} selected</span>
-              )}
-            </div>
-            
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleAddToNotebook}
-                disabled={totalNewSelections === 0 || isAdding}
-              >
-                {isAdding ? 'Adding...' : `Add ${totalNewSelections} Book${totalNewSelections !== 1 ? 's' : ''}`}
-              </Button>
-            </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="text-sm text-gray-600">
+            {totalNewSelections > 0 && (
+              <span>{totalNewSelections} new book{totalNewSelections !== 1 ? 's' : ''} selected</span>
+            )}
+          </div>
+          
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddToNotebook}
+              disabled={totalNewSelections === 0 || isAdding}
+            >
+              {isAdding ? 'Adding...' : 'Add'}
+            </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
   );
 };
 
