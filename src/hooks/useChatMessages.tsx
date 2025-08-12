@@ -219,30 +219,8 @@ export const useChatMessages = (notebookId?: string) => {
         async (payload) => {
           console.log('Realtime: New message received:', payload);
           
-          // Fetch books for proper transformation
-          const { data: booksData } = await supabase
-            .from('books')
-            .select('id, title, author');
-          
-          const bookMap = new Map(booksData?.map(b => [b.id, { title: b.title, type: 'book' }]) || []);
-          
-          // Transform the new message
-          const newMessages = transformDbRowToChatMessages(payload.new, bookMap);
-          
-          // Update the query cache with the new message
-          queryClient.setQueryData(['chat-messages', notebookId], (oldMessages: EnhancedChatMessage[] = []) => {
-            // Check if messages already exist to prevent duplicates
-            const existingIds = new Set(oldMessages.map(msg => msg.id));
-            const newMessagesToAdd = newMessages.filter(msg => !existingIds.has(msg.id));
-            
-            if (newMessagesToAdd.length === 0) {
-              console.log('Messages already exist, skipping');
-              return oldMessages;
-            }
-            
-            console.log('Adding new messages to cache:', newMessagesToAdd);
-            return [...oldMessages, ...newMessagesToAdd];
-          });
+          // Simply invalidate and refetch the query to get the latest messages
+          queryClient.invalidateQueries({ queryKey: ['chat-messages', notebookId] });
         }
       )
       .subscribe((status) => {
