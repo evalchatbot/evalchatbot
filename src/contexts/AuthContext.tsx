@@ -1,6 +1,13 @@
-
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+// src/contexts/AuthContext.tsx
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+} from 'react';
+import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
@@ -32,19 +39,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Track last applied user id to avoid redundant state churn
+  const lastUserIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+
   const updateAuthState = (newSession: Session | null) => {
-    console.log('AuthContext: Updating auth state:', newSession?.user?.email || 'No session');
-    setSession(newSession);
-    setUser(newSession?.user ?? null);
-    
-    // Clear any previous errors on successful auth
-    if (newSession && error) {
-      setError(null);
+    const nextUser = newSession?.user ?? null;
+    const nextUserId = nextUser?.id ?? null;
+
+    // Guard: only update if the user actually changed
+    if (lastUserIdRef.current !== nextUserId) {
+      console.log(
+        'AuthContext: Updating auth state:',
+        nextUser?.email || 'No session'
+      );
+      lastUserIdRef.current = nextUserId;
+      setSession(newSession);
+      setUser(nextUser);
+      // Clear any previous errors on successful auth
+      if (newSession && error) setError(null);
     }
   };
 
   const clearAuthState = () => {
     console.log('AuthContext: Clearing auth state');
+    lastUserIdRef.current = null;
     setSession(null);
     setUser(null);
     setError(null);
@@ -53,34 +72,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     try {
       console.log('AuthContext: Starting logout process...');
-      
-      // Clear local state immediately to provide instant feedback
+      // Optimistic local clear for instant UI feedback
       clearAuthState();
-      
-      // Attempt to sign out from server
+
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         console.log('AuthContext: Logout error:', error);
-        
-        // If session is invalid on server, we've already cleared local state
-        if (error.message.includes('session_not_found') || 
-            error.message.includes('Session not found') ||
-            error.status === 403) {
+
+        // If session is already invalid on server, local state is already cleared
+        if (
+          error.message?.includes('session_not_found') ||
+          error.message?.includes('Session not found') ||
+          (error as any)?.status === 403
+        ) {
           console.log('AuthContext: Session already invalid on server');
           return;
         }
-        
-        // For other errors, still ensure local session is cleared
+
+        // Ensure local session cleared even on other errors
         await supabase.auth.signOut({ scope: 'local' });
-        return;
+      } else {
+        console.log('AuthContext: Logout successful');
       }
-      
-      console.log('AuthContext: Logout successful');
     } catch (err) {
       console.error('AuthContext: Unexpected logout error:', err);
-      
-      // Even if there's an error, try to clear local session
       try {
         await supabase.auth.signOut({ scope: 'local' });
       } catch (localError) {
@@ -90,111 +106,70 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
     const initializeAuth = async () => {
       try {
         console.log('AuthContext: Initializing auth...');
-        
-        // Get initial session
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
-        
+        const {
+          data: { session: initialSession },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (!mountedRef.current) return;
+
         if (sessionError) {
-          console.error('AuthContext: Error getting initial session:', sessionError);
-          
+          console.error(
+            'AuthContext: Error getting initial session:',
+            sessionError
+          );
+
           // If the session is invalid, clear local state
-          if (sessionError.message.includes('session_not_found') || 
-              sessionError.message.includes('Session not found')) {
-            console.log('AuthContext: Session not found on server, clearing local session');
+          if (
+            sessionError.message?.includes('session_not_found') ||
+            sessionError.message?.includes('Session not found')
+          ) {
+            console.log(
+              'AuthContext: Session not found on server, clearing local session'
+            );
             await supabase.auth.signOut({ scope: 'local' });
-            if (mounted) {
-              clearAuthState();
-              setLoading(false);
-            }
+            clearAuthState();
+            setLoading(false);
             return;
           }
-          
-          if (mounted) {
-            setError(sessionError.message);
-            setLoading(false);
-          }
+
+          setError(sessionError.message);
+          setLoading(false);
           return;
         }
-        
-        if (mounted) {
-          console.log('AuthContext: Initial session:', initialSession?.user?.email || 'No session');
-          updateAuthState(initialSession);
-          setLoading(false);
-        }
+
+        console.log(
+          'AuthContext: Initial session:',
+          initialSession?.user?.email || 'No session'
+        );
+        updateAuthState(initialSession);
+        setLoading(false);
       } catch (err) {
         console.error('AuthContext: Auth initialization error:', err);
-        if (mounted) {
-          setError(err instanceof Error ? err.message : 'Authentication error');
-          setLoading(false);
-        }
+        if (!mountedRef.current) return;
+        setError(err instanceof Error ? err.message : 'Authentication error');
+        setLoading(false);
       }
     };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        if (!mounted) return;
-        
-        console.log('AuthContext: Auth state changed:', event, newSession?.user?.email || 'No session');
-        
-        // Handle sign out events
-        if (event === 'SIGNED_OUT') {
-          clearAuthState();
-          setLoading(false);
-          return;
-        }
-        
-        // Handle sign in and sign up events
-        if (event === 'SIGNED_IN' || event === 'SIGNED_UP' || event === 'TOKEN_REFRESHED') {
-          updateAuthState(newSession);
-          setLoading(false);
-          
-          // Create user profile for new signups
-          if (event === 'SIGNED_UP' && newSession?.user) {
-            createUserProfile(newSession.user);
-          }
-          
-          // Navigate to dashboard after successful authentication
-          if (event === 'SIGNED_IN' || event === 'SIGNED_UP') {
-            // Use setTimeout to ensure state updates are complete
-            setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 100);
-          }
-          return;
-        }
-        
-        // For other events, update state if there's an actual change
-        if (session?.access_token !== newSession?.access_token) {
-          updateAuthState(newSession);
-          if (loading) setLoading(false);
-        }
-      }
-    );
-
-    const createUserProfile = async (user: any) => {
+    // Create user profile for new signups
+    const createUserProfile = async (user: User) => {
       try {
         console.log('Creating user profile for:', user.email);
-        
-        const { error } = await supabase
-          .from('users')
-          .insert({
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || null,
-          });
+        const { error } = await supabase.from('users').insert({
+          id: user.id,
+          email: user.email,
+          full_name: (user.user_metadata as any)?.full_name || null,
+        });
 
-        if (error) {
-          // If user already exists, that's fine
-          if (!error.message.includes('duplicate key')) {
-            console.error('Error creating user profile:', error);
-          }
-        } else {
+        if (error && !error.message?.includes('duplicate key')) {
+          console.error('Error creating user profile:', error);
+        } else if (!error) {
           console.log('User profile created successfully');
         }
       } catch (err) {
@@ -202,14 +177,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     };
 
-    // Initialize auth state
+    // Subscribe to auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (!mountedRef.current) return;
+
+      console.log(
+        'AuthContext: Auth state changed:',
+        event,
+        newSession?.user?.email || 'No session'
+      );
+
+      if (event === 'SIGNED_OUT') {
+        clearAuthState();
+        setLoading(false);
+        return;
+      }
+
+      if (event === 'SIGNED_UP') {
+        // Update (guarded) + create profile once
+        updateAuthState(newSession);
+        if (newSession?.user) {
+          await createUserProfile(newSession.user);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // For SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED / PASSWORD_RECOVERY, etc.
+      updateAuthState(newSession);
+      setLoading(false);
+
+      // IMPORTANT: no redirects here.
+      // Navigation is handled by your route layer (e.g., ProtectedRoute).
+    });
+
+    // Initialize once
     initializeAuth();
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, []); // Empty dependency array to run only once
+  }, []); // run once
 
   const value: AuthContextType = {
     user,
