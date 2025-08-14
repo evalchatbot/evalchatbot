@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -24,8 +23,14 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
+  // If already authenticated (e.g., page refresh), push to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
-  // Update auth mode when prop changes
+  // Sync with incoming prop
   useEffect(() => {
     setAuthMode(mode);
   }, [mode]);
@@ -36,7 +41,6 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
 
     try {
       if (authMode === 'signup') {
-        // Validation for signup
         if (password !== confirmPassword) {
           throw new Error('Passwords do not match');
         }
@@ -44,72 +48,61 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
           throw new Error('Password must be at least 6 characters long');
         }
 
-        console.log('Attempting sign up for:', email);
-        
         const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               full_name: fullName.trim() || null,
-            }
-          }
-        });
-        
-        if (error) {
-          console.error('Sign up error:', error);
-          if (error.message.includes('User already registered')) {
-            throw new Error('An account with this email already exists. Please sign in instead.');
-          } else {
-            throw error;
-          }
-        }
-        
-        console.log('Sign up successful:', data.user?.email);
-        
-        toast({
-          title: "Account created!",
-          description: "Your account has been created successfully. You can now start using InsightsLM.",
+            },
+          },
         });
 
-        // The AuthContext will handle the redirect automatically
-        
+        if (error) {
+          if (error.message?.includes('User already registered')) {
+            throw new Error('An account with this email already exists. Please sign in instead.');
+          }
+          throw error;
+        }
+
+        // If your project requires email confirmation, Supabase may not create a session yet.
+        // You can still send them to dashboard if your app relies on onAuthStateChange,
+        // or show a "check your email" message. Here we go to dashboard for consistency.
+        toast({
+          title: 'Account created!',
+          description: 'Your account has been created successfully.',
+        });
+
+        navigate('/dashboard'); // ✅ redirect after signup
+
       } else {
-        // Sign in logic
-        console.log('Attempting sign in for:', email);
-        
         const { error, data } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        
+
         if (error) {
-          console.error('Sign in error:', error);
-          if (error.message.includes('Invalid login credentials')) {
+          if (error.message?.includes('Invalid login credentials')) {
             throw new Error('Invalid email or password. Please check your credentials and try again.');
-          } else if (error.message.includes('Email not confirmed')) {
-            throw new Error('Please check your email and click the confirmation link before signing in.');
-          } else {
-            throw error;
+          } else if (error.message?.includes('Email not confirmed')) {
+            throw new Error('Please verify your email before signing in.');
           }
+          throw error;
         }
-        
-        console.log('Sign in successful:', data.user?.email);
-        
+
         toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
+          title: 'Welcome back!',
+          description: 'You have successfully signed in.',
         });
 
-        // The AuthContext will handle the redirect automatically
+        navigate('/dashboard'); // ✅ redirect after signin
       }
-      
-    } catch (error: any) {
-      console.error('Auth form error:', error);
+    } catch (err: any) {
+      console.error('Auth form error:', err);
       toast({
-        title: authMode === 'signup' ? "Sign Up Error" : "Sign In Error",
-        description: error.message,
-        variant: "destructive",
+        title: authMode === 'signup' ? 'Sign Up Error' : 'Sign In Error',
+        description: err?.message || 'Something went wrong.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -130,10 +123,9 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
       <CardHeader>
         <CardTitle>{authMode === 'signup' ? 'Create Account' : 'Sign In'}</CardTitle>
         <CardDescription>
-          {authMode === 'signup' 
+          {authMode === 'signup'
             ? 'Create a new account to get started with InsightsLM'
-            : 'Enter your credentials to access your notebooks'
-          }
+            : 'Enter your credentials to access your notebooks'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -147,9 +139,11 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
+                disabled={loading}
               />
             </div>
           )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -159,8 +153,10 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="Enter your email"
+              disabled={loading}
             />
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -171,8 +167,10 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
               required
               placeholder={authMode === 'signup' ? 'Create a password (min 6 characters)' : 'Enter your password'}
               minLength={6}
+              disabled={loading}
             />
           </div>
+
           {authMode === 'signup' && (
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -184,27 +182,32 @@ const AuthForm = ({ mode = 'signin' }: AuthFormProps) => {
                 required
                 placeholder="Confirm your password"
                 minLength={6}
+                disabled={loading}
               />
             </div>
           )}
+
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading 
-              ? (authMode === 'signup' ? 'Creating Account...' : 'Signing In...')
-              : (authMode === 'signup' ? 'Create Account' : 'Sign In')
-            }
+            {loading
+              ? authMode === 'signup'
+                ? 'Creating Account...'
+                : 'Signing In...'
+              : authMode === 'signup'
+                ? 'Create Account'
+                : 'Sign In'}
           </Button>
-          
+
           <div className="text-center">
             <Button
               type="button"
               variant="link"
               onClick={toggleAuthMode}
               className="text-sm"
+              disabled={loading}
             >
-              {authMode === 'signup' 
+              {authMode === 'signup'
                 ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"
-              }
+                : "Don't have an account? Sign up"}
             </Button>
           </div>
         </form>
