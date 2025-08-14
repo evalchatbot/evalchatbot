@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Plus, BookOpen, Library, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotebooks } from '@/hooks/useNotebooks';
+import { Globe, Video, Upload } from 'lucide-react';
+
 const EmptyDashboard = () => {
   const navigate = useNavigate();
   const {
